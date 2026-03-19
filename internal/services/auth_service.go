@@ -76,19 +76,28 @@ func CreateUser(username, password, role string) error {
 	return database.DB.Create(&user).Error
 }
 
-// SeedAdmin creates a default master user if none exists
+// SeedAdmin creates default admin users if none exist
 func SeedAdmin() {
 	var count int64
 	database.DB.Model(&models.User{}).Count(&count)
 	if count == 0 {
+		// Create first admin user
 		user := models.User{
 			Username: "admin",
-			Role:     models.RoleMaster,
+			Role:     models.RoleAdmin,
 		}
-		// Hash password
 		hashed, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 		user.Password = string(hashed)
 		database.DB.Create(&user)
+
+		// Create second admin user
+		adminUser := models.User{
+			Username: "superadmin",
+			Role:     models.RoleAdmin,
+		}
+		hashedSuper, _ := bcrypt.GenerateFromPassword([]byte("superadmin123"), bcrypt.DefaultCost)
+		adminUser.Password = string(hashedSuper)
+		database.DB.Create(&adminUser)
 	}
 
 	// Seed Default Project

@@ -39,7 +39,7 @@
             </thead>
             <tbody>
                 {{range .Tasks}}
-                <tr>
+                <tr style="cursor: pointer;" hx-get="/tasks/{{.ID}}" hx-target="#modal-content" hx-trigger="click">
                     <td>{{if .TaskCode}}{{.TaskCode}}{{else}}#{{.ID}}{{end}}</td>
                     <td>{{.Title}}</td>
                     <td><span class="badge {{.Status | toLower}}" data-i18n="status_{{.Status | toLower}}">{{.Status}}</span></td>
@@ -68,3 +68,6 @@
         {{end}}
     </div>
 </div>
+
+<!-- Task Modal -->
+<div id="modal-content"></div>

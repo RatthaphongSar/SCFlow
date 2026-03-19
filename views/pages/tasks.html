@@ -63,12 +63,13 @@
                                                     </div>
                                                     <form hx-post="/tasks/{{.ID}}/assign" hx-trigger="change" hx-swap="none" hx-confirm="ยืนยันการมอบหมายงาน? หลังยืนยันจะเปลี่ยนไม่ได้" hx-on="htmx:afterOnLoad:if(event.detail.xhr.status>=200&&event.detail.xhr.status<300){this.querySelector('select').setAttribute('disabled','disabled')}" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
                                                         <span style="font-size: 0.85em; color: var(--text-muted);" data-i18n="assignee">Assignee</span>
-                                                        <select name="assignee_id" style="width: 200px; margin-bottom: 0;" {{if $task.Assignee}}disabled{{end}}>
+                                                        <select name="assignee_id" style="width: 200px; margin-bottom: 0;" {{if $task.Assignee}}disabled style="background-color: #4a5a4a; opacity: 0.7;"{{end}}>
                                                             <option value="" data-i18n="unassigned">Unassigned</option>
                                                             {{range $.Users}}
                                                             <option value="{{.ID}}" {{if and $task.Assignee (eq $task.Assignee.ID .ID)}}selected{{end}}>{{.Username}}</option>
                                                             {{end}}
                                                         </select>
+                                                        {{if $task.Assignee}}<span style="font-size: 0.75em; color: var(--warning-color);">( ไม่สามารถเปลี่ยนได้ )</span>{{end}}
                                                     </form>
                                                     <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 6px;">
                                                         Service: {{if .Project.Name}}{{.Project.Name}}{{else}}Unassigned Service{{end}} |
@@ -110,38 +111,98 @@
 <!-- SortableJS -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
+    var kanbanInstances = [];
+
     document.addEventListener('DOMContentLoaded', function() {
         initKanban();
     });
 
     // Re-init after HTMX swap
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.detail.target.id === 'kanban-board') {
-            initKanban();
-        }
+    document.addEventListener('htmx:afterSwap', function(evt) {
+        // Re-init kanban if the kanban-board was swapped
+        setTimeout(initKanban, 100);
     });
 
     function initKanban() {
+        // Destroy previous instances
+        kanbanInstances.forEach(instance => {
+            if (instance && instance.destroy) {
+                instance.destroy();
+            }
+        });
+        kanbanInstances = [];
+
         const columns = document.querySelectorAll('.kanban-tasks');
+        if (columns.length === 0) {
+            console.warn('No kanban columns found');
+            return;
+        }
+
         columns.forEach(col => {
-            new Sortable(col, {
-                group: 'kanban', // set both lists to same group
+            const sortableInstance = Sortable.create(col, {
+                name: 'kanban',
+                group: 'kanban',
                 animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                fallbackOnBody: true,
+                swapThreshold: 0.5,
+                invertSwap: false,
+                onStart: function(evt) {
+                    evt.from.style.opacity = '0.8';
+                },
                 onEnd: function (evt) {
+                    evt.from.style.opacity = '1';
+                    
                     const itemEl = evt.item;
                     const newStatus = evt.to.getAttribute('data-status');
+                    const oldStatus = evt.from.getAttribute('data-status');
                     const taskId = itemEl.getAttribute('data-id');
                     
                     // Only update if status changed
-                    if (evt.from !== evt.to) {
-                        // Send HTMX request to update status
-                        htmx.ajax('POST', '/tasks/' + taskId + '/status', {
-                            values: { status: newStatus },
-                            swap: 'none' // Don't replace content, we moved it manually
+                    if (oldStatus !== newStatus && taskId && newStatus) {
+                        console.log('Task ' + taskId + ' moved from ' + oldStatus + ' to ' + newStatus);
+                        
+                        // Send request to update status
+                        fetch('/tasks/' + taskId + '/status', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: 'status=' + encodeURIComponent(newStatus)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                console.error('Failed to update task status');
+                                location.reload(); // Reload to reset the view
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            location.reload();
                         });
                     }
                 }
             });
+            kanbanInstances.push(sortableInstance);
         });
+    }
+
+    // Add some CSS for drag and drop feedback
+    if (!document.getElementById('kanban-style')) {
+        const style = document.createElement('style');
+        style.id = 'kanban-style';
+        style.textContent = `
+            .sortable-ghost {
+                opacity: 0.4;
+                background-color: var(--border-color);
+            }
+            .sortable-drag {
+                opacity: 1;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                transform: rotate(2deg);
+            }
+        `;
+        document.head.appendChild(style);
     }
 </script>

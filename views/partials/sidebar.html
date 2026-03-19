@@ -24,12 +24,19 @@
         <a href="/logs" class="nav-item" hx-boost="true">
             <span data-i18n="logs">Logs</span>
         </a>
+        {{if eq .UserRole "Admin"}}
         <a href="/users" class="nav-item" hx-boost="true">
             <span data-i18n="users">Users</span>
         </a>
+        {{else}}
+        <a href="#" class="nav-item" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;" title="Only Admin can access Users menu">
+            <span data-i18n="users">Users</span>
+        </a>
+        {{end}}
     </nav>
     <div style="padding: 20px; border-top: 1px solid var(--border-color);">
         <div style="font-size: 0.8em; color: var(--text-muted);">User: {{if .Username}}{{.Username}}{{else}}Admin{{end}}</div>
+        {{if .UserRole}}<div style="font-size: 0.8em; color: var(--primary-color);">Role: {{.UserRole}}</div>{{end}}
         <a href="/logout" style="color: var(--danger-color); font-size: 0.8em;" data-i18n="logout">[ Logout ]</a>
     </div>
 </div>

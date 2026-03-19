@@ -8,18 +8,16 @@ import (
 
 // User Roles
 const (
-	RoleMaster       = "Master"
-	RoleProjectAdmin = "ProjectAdmin"
-	RoleMember       = "Member"
-	RoleViewer       = "Viewer"
+	RoleAdmin  = "Admin"
+	RoleMember = "Member"
 )
 
 // User represents a system user
 type User struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	Username  string         `gorm:"uniqueIndex;not null" json:"username"`
-	Password  string         `gorm:"not null" json:"-"` // Hash
-	Role      string         `gorm:"default:'Viewer'" json:"role"`
+	Password  string         `gorm:"not null" json:"-"`            // Hash
+	Role      string         `gorm:"default:'Member'" json:"role"` // Admin or Member
 	Email     string         `json:"email"`
 	LineID    string         `json:"line_id"`
 	CreatedAt time.Time      `json:"created_at"`
@@ -33,11 +31,12 @@ type Project struct {
 	Name        string         `gorm:"not null" json:"name"`
 	Key         string         `gorm:"uniqueIndex;size:10" json:"key"` // e.g. "INFRA", "BACK"
 	Description string         `json:"description"`
-	Status      string         `gorm:"default:'Active'" json:"status"`
+	Status      string         `gorm:"default:'Active'" json:"status"` // Active, Paused, Completed
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 	Tasks       []Task         `json:"tasks"`
+	Attachments []ProjectFile  `json:"attachments"`
 }
 
 // Task statuses
@@ -145,4 +144,15 @@ type OperationLog struct {
 	IPAddress string    `json:"ip_address"`
 	UserAgent string    `json:"user_agent"`
 	CreatedAt time.Time `json:"created_at" gorm:"index"`
+}
+
+// ProjectFile handles file attachments for projects
+type ProjectFile struct {
+	ID         uint      `json:"id" gorm:"primaryKey"`
+	ProjectID  uint      `json:"project_id" gorm:"index"`
+	FileName   string    `json:"file_name"`
+	FilePath   string    `json:"file_path"`
+	FileSize   int64     `json:"file_size"`
+	UploadedBy uint      `json:"uploaded_by" gorm:"index"`
+	CreatedAt  time.Time `json:"created_at"`
 }

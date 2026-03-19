@@ -58,7 +58,7 @@ func main() {
 
 	// Initialize Database
 	database.Connect()
-	
+
 	// Initialize Services
 	services.SeedAdmin()
 	services.InitLineBot()
@@ -82,10 +82,10 @@ func main() {
 
 	// Create Fiber App
 	app := fiber.New(fiber.Config{
-		Views:       engine,
-		AppName:     "SCFlow Internal Admin",
-		BodyLimit:   50 * 1024 * 1024, // 50MB limit for uploads
-		ReadTimeout: 120 * time.Second,
+		Views:        engine,
+		AppName:      "SCFlow Internal Admin",
+		BodyLimit:    50 * 1024 * 1024, // 50MB limit for uploads
+		ReadTimeout:  120 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	})
 
@@ -115,7 +115,7 @@ func main() {
 	app.Get("/login", handlers.LoginPage)
 	app.Post("/login", loginLimiter, handlers.LoginPost)
 	app.Get("/logout", handlers.Logout)
-	
+
 	// Rate Limiting for Webhook: 60 requests per 1 minute
 	webhookLimiter := limiter.New(limiter.Config{
 		Max:        60,
@@ -127,11 +127,11 @@ func main() {
 	api := app.Group("/", middleware.Protected())
 
 	api.Get("/", handlers.Dashboard)
-	
+
 	// Task Routes
 	api.Get("/tasks", handlers.GetTasks)
 	api.Get("/tasks/new", handlers.GetTaskForm)
-	api.Get("/tasks/search", handlers.GetTasks) 
+	api.Get("/tasks/search", handlers.GetTasks)
 	api.Get("/tasks/filter", handlers.GetTasks)
 	api.Get("/tasks/:id", handlers.GetTaskDetails)
 	api.Post("/tasks", handlers.CreateTask)
@@ -148,17 +148,19 @@ func main() {
 	// Project Routes
 	api.Get("/projects", handlers.GetProjects)
 	api.Post("/projects", handlers.CreateProject)
+	api.Get("/projects/:id", handlers.GetProjectDetails)
+	api.Post("/projects/:id/status", handlers.UpdateProjectStatus)
+	api.Post("/projects/:id/upload", handlers.UploadProjectFile)
 	api.Delete("/projects/:id", handlers.DeleteProject)
 
-	// User Routes (Master Only - simplified for now, or check in handler)
-	// Ideally should be in RoleCheck middleware
-	users := api.Group("/users", middleware.RoleCheck(models.RoleMaster))
+	// User Routes (Admin Only)
+	users := api.Group("/users", middleware.RoleCheck(models.RoleAdmin))
 	users.Get("/", handlers.GetUsers)
 	users.Post("/", handlers.CreateUser)
 	users.Delete("/:id", handlers.DeleteUser)
 
-	// SQL Routes (Master Only)
-	sql := api.Group("/sql", middleware.RoleCheck(models.RoleMaster))
+	// SQL Routes (All authenticated users can access)
+	sql := api.Group("/sql")
 	sql.Get("/", handlers.GetSQLScripts)
 	sql.Post("/", handlers.CreateSQLScript)
 	sql.Get("/:id/content", handlers.GetSQLScript)
@@ -166,14 +168,14 @@ func main() {
 	sql.Delete("/:id", handlers.DeleteSQLScript)
 
 	// Knowledge Base Routes (All authenticated users can access)
-	kb := api.Group("/knowledge", middleware.RoleCheck(models.RoleMaster, models.RoleProjectAdmin, models.RoleMember, models.RoleViewer))
+	kb := api.Group("/knowledge")
 	kb.Get("/", handlers.GetKnowledgeBase)
 	kb.Post("/", handlers.CreateKnowledge)
 	kb.Get("/:id/content", handlers.GetKnowledgeContent)
 	kb.Delete("/:id", handlers.DeleteKnowledge)
 
-	// Log Routes (Master and ProjectAdmin only)
-	logs := api.Group("/logs", middleware.RoleCheck(models.RoleMaster, models.RoleProjectAdmin))
+	// Log Routes (All authenticated users)
+	logs := api.Group("/logs")
 	logs.Get("/", handlers.GetLogs)
 	logs.Post("/analyze", handlers.AnalyzeLogFile)
 
@@ -205,4 +207,3 @@ func main() {
 	log.Printf("[INFO] SCFlow starting on port %s", port)
 	log.Fatal(app.Listen(":" + port))
 }
-

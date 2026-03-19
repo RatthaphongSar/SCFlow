@@ -31,7 +31,7 @@
                         <th data-i18n="id">ID</th>
                         <th data-i18n="name">Name</th>
                         <th data-i18n="key">Key</th>
-                        <th data-i18n="description">Description</th>
+                        <th data-i18n="status">Status</th>
                         <th data-i18n="created_at">Created At</th>
                         <th data-i18n="actions">Actions</th>
                     </tr>
@@ -42,10 +42,49 @@
                         <td>#{{.ID}}</td>
                         <td>{{.Name}}</td>
                         <td>{{.Key}}</td>
-                        <td>{{.Description}}</td>
-                        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
                         <td>
-                            <button class="btn" style="padding: 2px 6px; font-size: 0.8em; background-color: var(--danger-color);" 
+                            <span class="badge {{.Status | toLower}}" style="background-color: {{if eq .Status "Active"}}var(--success-color){{else if eq .Status "Paused"}}var(--warning-color){{else}}var(--text-muted){{end}};">
+                                {{.Status}}
+                            </span>
+                        </td>
+                        <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+                        <td style="display: flex; gap: 4px;">
+                            <button class="btn btn-sm" style="padding: 2px 6px; font-size: 0.8em;"
+                                    hx-get="/projects/{{.ID}}" 
+                                    hx-target="#modal-content"
+                                    data-i18n="view">
+                                View
+                            </button>
+                            {{if eq .Status "Active"}}
+                            <button class="btn btn-sm" style="padding: 2px 6px; font-size: 0.8em; background-color: var(--warning-color);"
+                                    hx-post="/projects/{{.ID}}/status" 
+                                    hx-vals='{"status":"Paused"}'
+                                    hx-swap="none"
+                                    hx-confirm="Pause this project?"
+                                    data-i18n="pause">
+                                Pause
+                            </button>
+                            {{else if eq .Status "Paused"}}
+                            <button class="btn btn-sm" style="padding: 2px 6px; font-size: 0.8em; background-color: var(--success-color);"
+                                    hx-post="/projects/{{.ID}}/status" 
+                                    hx-vals='{"status":"Active"}'
+                                    hx-swap="none"
+                                    hx-confirm="Resume this project?"
+                                    data-i18n="resume">
+                                Resume
+                            </button>
+                            {{end}}
+                            {{if ne .Status "Completed"}}
+                            <button class="btn btn-sm" style="padding: 2px 6px; font-size: 0.8em; background-color: #6a7a6a;"
+                                    hx-post="/projects/{{.ID}}/status" 
+                                    hx-vals='{"status":"Completed"}'
+                                    hx-swap="none"
+                                    hx-confirm="Mark project as completed?"
+                                    data-i18n="complete">
+                                Complete
+                            </button>
+                            {{end}}
+                            <button class="btn btn-sm" style="padding: 2px 6px; font-size: 0.8em; background-color: var(--danger-color);" 
                                     hx-delete="/projects/{{.ID}}" 
                                     hx-confirm="Are you sure you want to delete this project?"
                                     hx-target="closest tr" 
@@ -106,3 +145,6 @@
         </div>
     </div>
 </div>
+
+<!-- Project Modal -->
+<div id="modal-content"></div>

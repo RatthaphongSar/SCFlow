@@ -32,6 +32,39 @@ func getUsername(c *fiber.Ctx) string {
 	return user.Username
 }
 
+// getUserID retrieves the logged-in user's ID from context
+func getUserID(c *fiber.Ctx) uint {
+	userID, ok := c.Locals("user_id").(uint)
+	if !ok {
+		return 0
+	}
+	return userID
+}
+
+// stringToUint converts string to uint
+func stringToUint(s string) uint {
+	var id uint
+	fmt.Sscanf(s, "%d", &id)
+	return id
+}
+
+// getUserRole retrieves the logged-in user's role from context
+func getUserRole(c *fiber.Ctx) string {
+	role, ok := c.Locals("role").(string)
+	if !ok {
+		return models.RoleMember
+	}
+	return role
+}
+
+// getBaseMap returns the base fiber.Map with common variables
+func getBaseMap(c *fiber.Ctx) fiber.Map {
+	return fiber.Map{
+		"Username": getUsername(c),
+		"UserRole": getUserRole(c),
+	}
+}
+
 // --- Dashboard ---
 
 func Dashboard(c *fiber.Ctx) error {
@@ -284,21 +317,20 @@ func GetTasks(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Render("pages/tasks", fiber.Map{
-		"Columns":  columns,
-		"UserTree": userTree,
-		"Users":    users,
-		"Username": getUsername(c),
-		"Query":    searchQuery,
-		"FilterAssignee": func() uint {
-			if filterAssignee == "" {
-				return 0
-			}
-			var id uint
-			fmt.Sscanf(filterAssignee, "%d", &id)
-			return id
-		}(),
-	}, "layouts/main")
+	baseMap := getBaseMap(c)
+	baseMap["Columns"] = columns
+	baseMap["UserTree"] = userTree
+	baseMap["Users"] = users
+	baseMap["Query"] = searchQuery
+	baseMap["FilterAssignee"] = func() uint {
+		if filterAssignee == "" {
+			return 0
+		}
+		var id uint
+		fmt.Sscanf(filterAssignee, "%d", &id)
+		return id
+	}()
+	return c.Render("pages/tasks", baseMap, "layouts/main")
 }
 
 func GetTaskDetails(c *fiber.Ctx) error {
@@ -697,15 +729,171 @@ func DeleteProject(c *fiber.Ctx) error {
 	return c.SendString("")
 }
 
+func GetProjectDetails(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var project models.Project
+	if result := database.DB.Preload("Attachments").Find(&project, id); result.Error != nil {
+		return c.Status(404).SendString("Project not found")
+	}
+
+	// Get tasks for this project
+	var tasks []models.Task
+	database.DB.Where("project_id = ?", id).Order("status, created_at desc").Find(&tasks)
+
+	attachmentsHTML := getProjectAttachmentsHTML(project.Attachments)
+
+	return c.SendString(fmt.Sprintf(`
+		<div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;" onclick="if(event.target===this)this.innerHTML=''">
+			<div style="background: var(--bg-color); padding: 20px; border-radius: 8px; max-width: 600px; max-height: 80vh; overflow-y: auto; width: 90%%; border: 1px solid var(--border-color);">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+					<h2 style="margin: 0;">%s #%d</h2>
+					<button onclick="if(this.closest('[onclick]'))this.closest('[onclick]').innerHTML=''" style="background: none; border: none; color: var(--text-muted); font-size: 1.5em; cursor: pointer;">✕</button>
+				</div>
+
+				<div style="margin-bottom: 15px;">
+					<label style="display: block; margin-bottom: 5px; color: var(--text-muted);">Project Key</label>
+					<div style="padding: 8px; background: var(--input-bg); border-radius: 4px;">%s</div>
+				</div>
+
+				<div style="margin-bottom: 15px;">
+					<label style="display: block; margin-bottom: 5px; color: var(--text-muted);">Status</label>
+					<div style="padding: 8px; background: var(--input-bg); border-radius: 4px;">
+						<span class="badge" style="background-color: %s;">%s</span>
+					</div>
+				</div>
+
+				<div style="margin-bottom: 15px;">
+					<label style="display: block; margin-bottom: 5px; color: var(--text-muted);">Description</label>
+					<div style="padding: 8px; background: var(--input-bg); border-radius: 4px;">%s</div>
+				</div>
+
+				<div style="margin-bottom: 15px;">
+					<label style="display: block; margin-bottom: 5px; color: var(--text-muted);">Tasks</label>
+					<div style="padding: 8px; background: var(--input-bg); border-radius: 4px;">%d tasks</div>
+				</div>
+
+				<div style="margin-bottom: 20px;">
+					<label style="display: block; margin-bottom: 5px; color: var(--text-muted);">File Attachments</label>
+					<div style="max-height: 200px; overflow-y: auto; background: var(--input-bg); border-radius: 4px; padding: 8px; margin-bottom: 8px;">
+						%s
+					</div>
+					<form hx-post="/projects/%d/upload" hx-encoding="multipart/form-data" hx-swap="none" style="display: flex; gap: 8px;">
+						<input type="file" name="file" required style="flex: 1; padding: 6px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px;">
+						<button type="submit" class="btn btn-primary" style="padding: 6px 12px;">Upload</button>
+					</form>
+				</div>
+
+				<button onclick="if(this.closest('[onclick]'))this.closest('[onclick]').innerHTML=''" class="btn" style="width: 100%%; padding: 8px;">Close</button>
+			</div>
+		</div>
+	`,
+		html.EscapeString(project.Name),
+		project.ID,
+		html.EscapeString(project.Key),
+		getStatusColor(project.Status),
+		html.EscapeString(project.Status),
+		html.EscapeString(project.Description),
+		len(tasks),
+		attachmentsHTML,
+		project.ID,
+	))
+}
+
+func getStatusColor(status string) string {
+	switch status {
+	case "Active":
+		return "var(--success-color)"
+	case "Paused":
+		return "var(--warning-color)"
+	case "Completed":
+		return "var(--text-muted)"
+	default:
+		return "var(--primary-color)"
+	}
+}
+
+func getProjectAttachmentsHTML(attachments []models.ProjectFile) string {
+	if len(attachments) == 0 {
+		return `<div style="color: var(--text-muted); font-size: 0.9em;">No attachments</div>`
+	}
+	html := ""
+	for _, file := range attachments {
+		var uploader string
+		var uploaderUser models.User
+		if err := database.DB.First(&uploaderUser, file.UploadedBy).Error; err != nil {
+			uploader = "Unknown"
+		} else {
+			uploader = uploaderUser.Username
+		}
+		html += fmt.Sprintf(`
+			<div style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+				<div>
+					<div style="font-weight: 500;">%s</div>
+					<div style="font-size: 0.8em; color: var(--text-muted);">By %s - %s</div>
+				</div>
+				<button hx-delete="/projects/files/%d" hx-swap="none" class="btn btn-sm" style="color: var(--danger-color);">Delete</button>
+			</div>
+		`, file.FileName, uploader, file.CreatedAt.Format("2006-01-02"), file.ID)
+	}
+	return html
+}
+
+func UpdateProjectStatus(c *fiber.Ctx) error {
+	id := c.Params("id")
+	status := c.FormValue("status")
+
+	// Validate status
+	if status != "Active" && status != "Paused" && status != "Completed" {
+		return c.Status(400).SendString("Invalid status")
+	}
+
+	if result := database.DB.Model(&models.Project{}).Where("id = ?", id).Update("status", status); result.Error != nil {
+		return c.Status(500).SendString("Failed to update project status")
+	}
+
+	return c.SendString("")
+}
+
+func UploadProjectFile(c *fiber.Ctx) error {
+	id := c.Params("id")
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.Status(400).SendString("File upload failed")
+	}
+
+	// Save file
+	fileName := fmt.Sprintf("project_%s_%d_%s", id, time.Now().Unix(), file.Filename)
+	filePath := fmt.Sprintf("./public/uploads/%s", fileName)
+
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(500).SendString("Failed to save file")
+	}
+
+	// Create database record
+	projectFile := models.ProjectFile{
+		ProjectID:  stringToUint(id),
+		FileName:   file.Filename,
+		FilePath:   filePath,
+		FileSize:   file.Size,
+		UploadedBy: getUserID(c),
+	}
+
+	if result := database.DB.Create(&projectFile); result.Error != nil {
+		return c.Status(500).SendString("Failed to save file record")
+	}
+
+	return c.SendString("")
+}
+
 // --- Users (Master Only) ---
 
 func GetUsers(c *fiber.Ctx) error {
 	var users []models.User
 	database.DB.Find(&users)
-	return c.Render("pages/users", fiber.Map{
-		"Users":    users,
-		"Username": getUsername(c),
-	}, "layouts/main")
+
+	baseMap := getBaseMap(c)
+	baseMap["Users"] = users
+	return c.Render("pages/users", baseMap, "layouts/main")
 }
 
 func CreateUser(c *fiber.Ctx) error {
@@ -1002,13 +1190,13 @@ func RunCustomSQL(c *fiber.Ctx) error {
 
 	role, ok := c.Locals("role").(string)
 	if !ok {
-		role = models.RoleMaster
-	} // Default to master for dev safety or handle otherwise
+		role = models.RoleAdmin
+	} // Default to admin for dev safety or handle otherwise
 
-	isMaster := (role == models.RoleMaster)
+	isAdmin := (role == models.RoleAdmin)
 	readOnly := (mode == "readonly")
 
-	result, err := services.ExecuteSafeQuery(query, userID, isMaster, readOnly)
+	result, err := services.ExecuteSafeQuery(query, userID, isAdmin, readOnly)
 	if err != nil {
 		return c.Status(400).SendString(fmt.Sprintf("<div style='color:red'>Error: %v</div>", err))
 	}
@@ -1048,12 +1236,12 @@ func RunSQLScript(c *fiber.Ctx) error {
 
 	role, ok := c.Locals("role").(string)
 	if !ok {
-		role = models.RoleMaster
+		role = models.RoleAdmin
 	}
 
-	isMaster := (role == models.RoleMaster)
+	isAdmin := (role == models.RoleAdmin)
 
-	result, err := services.ExecuteSafeQuery(script.Content, userID, isMaster, true)
+	result, err := services.ExecuteSafeQuery(script.Content, userID, isAdmin, true)
 	if err != nil {
 		return c.Status(400).SendString("Error executing script: " + err.Error())
 	}
