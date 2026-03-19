@@ -1,0 +1,119 @@
+<h2 class="mb-4" data-i18n="system_logs_title">> System Logs</h2>
+
+<!-- External Log Analyzer -->
+<div class="card mb-4" style="border: 1px dashed var(--border-color);">
+    <h3 data-i18n="external_log_analyzer">External Log Analyzer</h3>
+    <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 15px;" data-i18n="external_log_desc">Upload a log file (.log, .txt) to analyze errors and warnings.</p>
+    <form hx-post="/logs/analyze" hx-encoding="multipart/form-data" hx-target="#log-analysis-result" hx-indicator="#loading-indicator">
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9em;" data-i18n="upload_logs_label">Upload Logs (Max 5 files)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="file" name="log_file" multiple required style="padding: 8px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; flex: 1;">
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+             <label style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9em;" data-i18n="ask_question_label">Ask a question (Optional)</label>
+             <input type="text" name="question" placeholder="e.g., Why did the service restart? or What caused the timeout?" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px;">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <span data-i18n="analyze_btn">Analyze & Explain</span>
+        </button>
+        
+        <div id="loading-indicator" class="htmx-indicator" style="margin-top: 10px; color: var(--text-muted);">Analyzing...</div>
+    </form>
+    <div id="log-analysis-result"></div>
+</div>
+
+<div class="grid-container mb-4">
+    <!-- Log Analytics -->
+    <div class="card" style="grid-column: span 4;">
+        <h3 data-i18n="log_analytics">Log Analytics</h3>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <h4 style="margin-bottom: 10px; color: var(--text-muted);" data-i18n="operation_stats">Operation Stats</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {{range .OpStats}}
+                    <div style="background-color: var(--bg-color); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); min-width: 100px;">
+                        <div style="font-size: 0.8em; color: var(--text-muted);">{{.Type}}</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: var(--primary-color);">{{.Count}}</div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            <div style="flex: 1;">
+                <h4 style="margin-bottom: 10px; color: var(--text-muted);" data-i18n="task_stats">Task Activity Stats</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {{range .TaskStats}}
+                    <div style="background-color: var(--bg-color); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); min-width: 100px;">
+                        <div style="font-size: 0.8em; color: var(--text-muted);">{{.Type}}</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: var(--success-color);">{{.Count}}</div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Tables -->
+    <div class="card" style="grid-column: span 2;">
+        <h3 data-i18n="operation_logs">Operation Logs</h3>
+        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-i18n="time">Time</th>
+                        <th data-i18n="user">User</th>
+                        <th data-i18n="action">Action</th>
+                        <th data-i18n="target">Target</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .OperationLogs}}
+                    <tr>
+                        <td style="font-size: 0.85em; color: var(--text-muted);">{{.CreatedAt.Format "01/02 15:04"}}</td>
+                        <td>{{.User.Username}}</td>
+                        <td>{{.Action}}</td>
+                        <td>{{.Target}}</td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="4" style="text-align: center;" data-i18n="no_logs_found">No logs.</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+        <h3 data-i18n="task_logs">Task Logs</h3>
+        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-i18n="time">Time</th>
+                        <th data-i18n="task_id">Task ID</th>
+                        <th data-i18n="action">Action</th>
+                        <th data-i18n="detail">Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .TaskLogs}}
+                    <tr>
+                        <td style="font-size: 0.85em; color: var(--text-muted);">{{.CreatedAt.Format "01/02 15:04"}}</td>
+                        <td>{{ $code := index $.TaskCodes .TaskID }}{{if $code}}{{$code}}{{else}}#{{.TaskID}}{{end}}</td>
+                        <td>{{.Action}}</td>
+                        <td>{{.Detail}}</td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td colspan="4" style="text-align: center;" data-i18n="no_logs_found">No logs.</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,113 @@
+<h2 class="mb-4" data-i18n="sql_scripts_manager">SQL Scripts Manager</h2>
+
+<div class="grid-4 mb-4">
+    <!-- Left Column: Saved Scripts -->
+    <div class="card" style="grid-column: span 1;">
+        <h3 data-i18n="saved_scripts">Saved Scripts</h3>
+        
+        <form action="/sql" method="GET" class="mb-2">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" name="search" placeholder="Search..." data-i18n-placeholder="search_placeholder" value="{{.Search}}" style="flex: 1; min-width: 0;">
+                <button type="submit" class="btn btn-primary" style="padding: 5px 8px;" data-i18n="go">Go</button>
+            </div>
+        </form>
+
+        <div style="height: 500px; overflow-y: auto;">
+            {{range .Scripts}}
+            <div class="nav-item" style="display: flex; flex-direction: column; gap: 5px; border-bottom: 1px solid var(--border-color); padding: 8px 0;">
+                <div style="cursor: pointer;" 
+                     hx-get="/sql/{{.ID}}/content" 
+                     hx-target="#script-display-area"
+                     hx-swap="innerHTML">
+                    <div style="font-weight: bold; color: var(--primary-color);">{{.Name}}</div>
+                    <div style="font-size: 0.8em; color: var(--text-muted);">v{{.Version}} | {{.CreatedAt.Format "Jan 02"}}</div>
+                </div>
+                <div style="display: flex; gap: 5px; justify-content: flex-end;">
+                     <button class="btn" style="padding: 2px 8px; font-size: 0.7em;"
+                            onclick="loadScriptForEdit('{{.ID}}')"
+                            data-i18n="edit">
+                        Edit
+                    </button>
+                    <button class="btn" style="padding: 2px 8px; font-size: 0.7em; background-color: var(--danger-color);"
+                            hx-delete="/sql/{{.ID}}"
+                            hx-confirm="Delete script?"
+                            hx-target="closest .nav-item"
+                            hx-swap="outerHTML"
+                            data-i18n="delete">
+                        Del
+                    </button>
+                </div>
+            </div>
+            {{else}}
+            <div style="color: var(--text-muted); padding: 10px;" data-i18n="no_saved_scripts">No saved scripts found.</div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Right Column: Editor & Results -->
+    <div class="card" style="grid-column: span 3;">
+        <div class="flex-between mb-4">
+            <h3 data-i18n="script_viewer">Script Viewer</h3>
+            <button class="btn" onclick="toggleSaveForm()" data-i18n="new_script_edit">New Script / Edit</button>
+        </div>
+
+        <form id="save-form" action="/sql" method="POST" style="display: none; margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: rgba(0,0,0,0.1);">
+            <h4 id="form-title" data-i18n="save_new_script_version">Save New Script Version</h4>
+            <input type="hidden" name="id" value="">
+            <div class="mb-2">
+                <input type="text" name="name" placeholder="Script Name (e.g., Monthly Report)" data-i18n-placeholder="script_name_placeholder" required style="width: 100%;">
+            </div>
+            <div class="mb-2">
+                <input type="text" name="description" placeholder="Description" data-i18n-placeholder="description" style="width: 100%;">
+            </div>
+            <textarea name="content" rows="5" placeholder="SQL Content" data-i18n-placeholder="sql_content_placeholder" required style="font-family: monospace;"></textarea>
+            <div class="mt-2 flex-between">
+                <button type="submit" class="btn btn-primary" data-i18n="save_script">Save Script</button>
+                <button type="button" class="btn" style="background-color: var(--text-muted);" onclick="clearForm()" data-i18n="clear_form">Clear Form</button>
+            </div>
+        </form>
+
+        <!-- Script Display Area -->
+        <div id="script-display-area" style="min-height: 200px; padding: 20px; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+            <div data-i18n="select_script_view">Select a script from the left to view</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSaveForm() {
+    const form = document.getElementById('save-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function clearForm() {
+    document.querySelector('input[name="id"]').value = "";
+    document.querySelector('input[name="name"]').value = "";
+    document.querySelector('input[name="description"]').value = "";
+    document.querySelector('textarea[name="content"]').value = "";
+    document.getElementById('form-title').innerText = "Save New Script Version";
+}
+
+function loadScriptForEdit(id) {
+    fetch(`/sql/${id}/details`)
+        .then(r => r.json())
+        .then(data => {
+            document.querySelector('input[name="id"]').value = data.id;
+            document.querySelector('input[name="name"]').value = data.name;
+            document.querySelector('input[name="description"]').value = data.description;
+            document.querySelector('textarea[name="content"]').value = data.content;
+            document.getElementById('form-title').innerText = "Edit Script: " + data.name;
+            document.getElementById('save-form').style.display = 'block';
+        });
+}
+
+function copyToClipboard() {
+    const code = document.getElementById('script-content').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+        Alert.success('Copied to clipboard!', 2000);
+    }, (err) => {
+        console.error('Could not copy text: ', err);
+        Alert.error('Failed to copy to clipboard', 2000);
+    });
+}
+</script>

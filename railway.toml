@@ -1,0 +1,20 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "./scflow"
+healthcheckPath = "/login"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+internalPort = 3000
+protocol = "tcp"
+
+[[services.ports]]
+port = 443
+protocol = "https"
+
+[env]
+PORT = "3000"
+DB_DSN = "scflow.db"

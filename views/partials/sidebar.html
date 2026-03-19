@@ -1,0 +1,35 @@
+<div class="sidebar">
+    <div class="brand">
+        > SCFlow_
+    </div>
+    <nav class="nav">
+        <a href="/" class="nav-item" hx-boost="true">
+            <span data-i18n="dashboard">Dashboard</span>
+        </a>
+        <a href="/projects" class="nav-item" hx-boost="true">
+            <span data-i18n="projects">Projects</span>
+        </a>
+        <a href="/tasks" class="nav-item" hx-boost="true">
+            <span data-i18n="tasks">Tasks</span>
+        </a>
+        <a href="/calendar" class="nav-item" hx-boost="true">
+            <span data-i18n="calendar">Calendar</span>
+        </a>
+        <a href="/sql" class="nav-item" hx-boost="true">
+            <span data-i18n="sql_scripts">SQL Scripts</span>
+        </a>
+        <a href="/knowledge" class="nav-item" hx-boost="true">
+            <span data-i18n="knowledge_base">Knowledge Base</span>
+        </a>
+        <a href="/logs" class="nav-item" hx-boost="true">
+            <span data-i18n="logs">Logs</span>
+        </a>
+        <a href="/users" class="nav-item" hx-boost="true">
+            <span data-i18n="users">Users</span>
+        </a>
+    </nav>
+    <div style="padding: 20px; border-top: 1px solid var(--border-color);">
+        <div style="font-size: 0.8em; color: var(--text-muted);">User: {{if .Username}}{{.Username}}{{else}}Admin{{end}}</div>
+        <a href="/logout" style="color: var(--danger-color); font-size: 0.8em;" data-i18n="logout">[ Logout ]</a>
+    </div>
+</div>

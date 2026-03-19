@@ -1,0 +1,40 @@
+<div style="display: flex; gap: 15px; min-width: 100%;">
+    {{range .Columns}}
+    <div class="kanban-column" style="min-width: 280px; width: 280px; background-color: var(--bg-secondary); border-radius: 8px; padding: 10px; display: flex; flex-direction: column;">
+        <div class="kanban-header" style="padding-bottom: 10px; border-bottom: 2px solid {{.Color}}; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between;">
+            <span>{{.Title}}</span>
+            <span class="badge" style="background-color: var(--bg-color);">{{len .Tasks}}</span>
+        </div>
+        <div class="kanban-tasks" id="col-{{.Status}}" data-status="{{.Status}}" style="flex-grow: 1; min-height: 200px;">
+            {{range .Tasks}}
+            <div class="kanban-card" data-id="{{.ID}}" style="background-color: var(--card-color); padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid var(--border-color); cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-size: 0.8em; color: var(--text-muted);">{{if .TaskCode}}{{.TaskCode}}{{else}}#{{.ID}}{{end}}</span>
+                    <span class="badge" style="font-size: 0.7em; background-color: {{if eq .Priority "High"}}var(--danger-color){{else if eq .Priority "Critical"}}#dc3545{{else}}var(--bg-color){{end}};">{{.Priority}}</span>
+                </div>
+                <div style="font-weight: 500; margin-bottom: 8px;">
+                    <a href="#" hx-get="/tasks/{{.ID}}" hx-target="#modal-content" style="text-decoration: none; color: var(--text-color);">{{.Title}}</a>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; color: var(--text-muted);">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        {{if .Assignee}}
+                        <div style="width: 20px; height: 20px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;">
+                            {{slice .Assignee.Username 0 1}}
+                        </div>
+                        <span>{{.Assignee.Username}}</span>
+                        {{else}}
+                        <span data-i18n="unassigned">Unassigned</span>
+                        {{end}}
+                    </div>
+                    {{if .DueDate}}
+                    <div style="{{if .IsOverdue}}color: var(--danger-color); font-weight: bold;{{end}}">
+                        {{.DueDate.Format "01/02"}}
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>

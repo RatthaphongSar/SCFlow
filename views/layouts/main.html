@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCFlow - Internal Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="/js/alerts.js"></script>
+    <script src="/js/htmx-alerts.js"></script>
+    <style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--card-color); }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        {{if not .IsLogin}}
+        {{template "partials/sidebar" .}}
+        {{end}}
+        
+        <div class="main-content">
+            {{if not .IsLogin}}
+            <div class="topbar">
+                <div>
+                    <span style="color: var(--primary-color);" data-i18n="system_status">System Status:</span> <span style="color: var(--success-color);" data-i18n="online">ONLINE</span>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.8em;" onclick="toggleLanguage()">EN / TH</button>
+                    <input type="text" placeholder="Search..." data-i18n-placeholder="search_placeholder" style="width: 200px; margin-bottom: 0;">
+                </div>
+            </div>
+            {{else}}
+            <div style="position: absolute; top: 20px; right: 20px; z-index: 1000;">
+                <button class="btn" style="padding: 5px 10px; font-size: 0.8em; background-color: var(--card-color); border: 1px solid var(--border-color);" onclick="toggleLanguage()">EN / TH</button>
+            </div>
+            {{end}}
+            
+            <div class="content-area" id="main-content">
+                {{embed}}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        var translations = {
+            en: {
+                // Sidebar
+                "dashboard": "Dashboard",
+                "projects": "Projects",
+                "tasks": "Tasks",
+                "calendar": "Calendar",
+                "sql_scripts": "SQL Scripts",
+                "knowledge_base": "DocTools",
+                "logs": "System Logs",
+                "users": "Users",
+                "logout": "[ Logout ]",
+                
+                // Topbar
+                "system_status": "System Status:",
+                "online": "ONLINE",
+                "search_placeholder": "Search...",
+
+                // Common Actions & Labels
+                "save": "Save",
+                "edit": "Edit",
+                "delete": "Delete",
+                "cancel": "Cancel",
+                "create_new": "Create New",
+                "copy": "Copy",
+                "view": "View",
+                "view_all": "View All",
+                "actions": "Actions",
+                "id": "ID",
+                "name": "Name",
+                "description": "Description",
+                "status": "Status",
+                "created_at": "Created At",
+                "updated_at": "Updated At",
+                
+                // Dashboard
+                "dashboard_title": "Dashboard",
+                "total_tasks": "Total Tasks",
+                "pending_tasks": "Pending / In Progress",
+                "completed_tasks": "Completed",
+                "total_projects": "Projects",
+                "recent_tasks": "Recent Tasks",
+                "task": "Task",
+                "priority": "Priority",
+                "creator": "Creator",
+                "assignee": "Assignee",
+                "spin": "Spin",
+                "due_date": "Due Date",
+                "no_tasks_found": "No tasks found.",
+                "system_logs_title": "System Logs",
+
+                // Projects
+                "project_management": "Project Management",
+                "new_project": "New Project",
+                "create_project": "Create Project",
+                "all_projects": "All Projects",
+                "key": "Key",
+                "no_projects_found": "No projects found.",
+                "project_timeline": "Project Timeline & Calendar",
+                "upcoming_deadlines": "Upcoming Deadlines",
+                "gantt_chart": "Gantt Chart (Simple View)",
+                "no_upcoming_deadlines": "No upcoming deadlines",
+                
+                // Tasks
+                "tasks_title": "Tasks",
+                "new_task": "+ New Task",
+                "search_tasks_placeholder": "Search tasks...",
+                "all_status": "All Status",
+                "project": "Project",
+                "title": "Title",
+                "status_planning": "Planning",
+                "status_correct": "Correct",
+                "status_test": "Test",
+                "status_ready": "Ready",
+                "status_deploy": "Deploy",
+                "status_done": "Done",
+                "priority_high": "High",
+                "priority_medium": "Medium",
+                "priority_low": "Low",
+                "role_member": "Member",
+                "role_projectadmin": "Project Admin",
+                "role_viewer": "Viewer",
+                "role_master": "Master",
+                "unassigned": "Unassigned",
+                "parent_task": "Parent Task",
+                "subtasks": "Subtasks",
+                "close": "Close",
+                "total": "Total",
+                "page": "Page",
+                "previous": "Previous",
+                "next": "Next",
+                "new_subtask": "New Subtask",
+                "task_title_placeholder": "Task title...",
+                "subtask_title_placeholder": "Subtask title...",
+                "attachment": "Attachment",
+                "create_task_btn": "Create Task",
+                "task_progress": "Task Progress",
+                "add_progress": "Add Progress",
+                "message": "Message",
+                "link": "Link",
+                "log_type": "Log Type",
+                "no_task_logs": "No logs found.",
+                "task_progress": "บันทึกงาน",
+                "add_progress": "เพิ่มบันทึกงาน",
+                "message": "ข้อความ",
+                "link": "ลิงก์",
+                "log_type": "ประเภทบันทึก",
+                "no_task_logs": "ยังไม่มีบันทึกงาน",
+
+                // SQL Scripts
+                "script_viewer": "Script Viewer",
+                "new_script_edit": "New Script / Edit",
+                "save_new_script_version": "Save New Script Version",
+                "script_name_placeholder": "Script Name (e.g., Monthly Report)",
+                "sql_content_placeholder": "SQL Content",
+                "save_script": "Save Script",
+                "clear_form": "Clear Form",
+                "select_script_view": "Select a script from the left to view",
+                "copy_clipboard": "Copy to Clipboard",
+                "sql_scripts_manager": "SQL Scripts Manager",
+                "saved_scripts": "Saved Scripts",
+                "go": "Go",
+                "no_saved_scripts": "No saved scripts found.",
+                
+                // DocTools
+                "knowledge_base_title": "DocTools",
+                "search_kb_placeholder": "Search (Title, Tags)...",
+                "all_categories": "All Categories",
+                "cat_hardware": "Hardware",
+                "cat_software": "Software",
+                "cat_network": "Network",
+                "cat_account": "Account",
+                "cat_mobile_pda": "Mobile PDA",
+                "cat_mobile_got": "Mobile GOT",
+                "cat_ordering": "Ordering",
+                "cat_inventory": "Inventory",
+                "cat_backend_sc": "Backend SC",
+                "cat_audit": "Audit",
+                "cat_other": "Other",
+                "article_viewer": "Article Viewer",
+                "new_article": "New Article",
+                "create_new_article": "Create New Article",
+                "title_placeholder": "Title (e.g., How to reset VPN)",
+                "content_placeholder": "Content (Support basic text layout)...",
+                "save_article": "Save Article",
+                "select_article_view": "Select an article from the left to view",
+                "category": "Category",
+                "tags": "Tags",
+                "tags_placeholder": "Tags (e.g., vpn, password, wifi)",
+                "no_articles_found": "No articles found",
+
+                // Logs
+                "logs_title": "System Logs",
+                "operation_logs": "Operation Logs",
+                "task_logs": "Task Logs",
+                "filter_type_placeholder": "Filter by Type...",
+                "all_types": "All Types",
+                "type": "Type",
+                "time": "Time",
+                "action": "Action",
+                "target": "Target",
+                "task_id": "Task ID",
+                "detail": "Detail",
+                "message": "Message",
+                "user": "User",
+                "ip_address": "IP Address",
+                "no_logs_found": "No logs found.",
+                "log_analytics": "Log Analytics",
+                "operation_stats": "Operation Stats",
+                "task_stats": "Task Activity Stats",
+                "external_log_analyzer": "External Log Analyzer",
+                "external_log_desc": "Upload a log file (.log, .txt) to analyze errors and warnings.",
+                "analyze_btn": "Analyze Log",
+                
+                // Users
+                "user_management_title": "User Management",
+                "new_user": "New User",
+                "create_user": "Create User",
+                "all_users": "All Users",
+                "username": "Username",
+                "role": "Role",
+                "email": "Email",
+                "password": "Password",
+                "last_login": "Last Login",
+                "no_users_found": "No users found.",
+
+                // Login
+                "login_title": "SCFlow_ Login",
+                "login_button": "Login",
+            },
+            th: {
+                // Sidebar
+                "dashboard": "แดชบอร์ด",
+                "projects": "จัดการโปรเจค",
+                "tasks": "งานที่ต้องทำ",
+                "calendar": "ปฏิทินงาน",
+                "sql_scripts": "SQL Scripts",
+                "knowledge_base": "คู่มือ/แนวทาง (DocTools)",
+                "logs": "System Logs",
+                "users": "ผู้ใช้งาน",
+                "logout": "[ ออกจากระบบ ]",
+
+                // Topbar
+                "system_status": "สถานะระบบ:",
+                "online": "ปกติ",
+                "search_placeholder": "ค้นหา...",
+
+                // Common Actions & Labels
+                "save": "บันทึก",
+                "edit": "แก้ไข",
+                "delete": "ลบ",
+                "cancel": "ยกเลิก",
+                "create_new": "สร้างใหม่",
+                "copy": "คัดลอก",
+                "view": "ดูรายละเอียด",
+                "view_all": "ดูทั้งหมด",
+                "actions": "จัดการ",
+                "id": "ID",
+                "name": "ชื่อ",
+                "description": "รายละเอียด",
+                "status": "สถานะ",
+                "created_at": "วันที่สร้าง",
+                "updated_at": "แก้ไขล่าสุด",
+
+                // Dashboard
+                "dashboard_title": "แดชบอร์ด",
+                "total_tasks": "งานทั้งหมด",
+                "pending_tasks": "รอดำเนินการ / กำลังทำ",
+                "completed_tasks": "เสร็จสิ้น",
+                "total_projects": "โปรเจคทั้งหมด",
+                "recent_tasks": "งานล่าสุด",
+                "task": "ชื่องาน",
+                "priority": "ความสำคัญ",
+                "creator": "ผู้สร้าง",
+                "assignee": "ผู้รับผิดชอบ",
+                "spin": "แตกงาน",
+                "due_date": "กำหนดส่ง",
+                "no_tasks_found": "ไม่พบข้อมูลงาน",
+                "system_logs_title": "บันทึกระบบ (Logs)",
+
+                // Projects
+                "project_management": "จัดการโปรเจค",
+                "new_project": "สร้างโปรเจคใหม่",
+                "create_project": "ยืนยันสร้างโปรเจค",
+                "all_projects": "รายการโปรเจคทั้งหมด",
+                "key": "รหัสย่อ (Key)",
+                "no_projects_found": "ไม่พบข้อมูลโปรเจค",
+                "project_timeline": "ไทม์ไลน์และปฏิทินโปรเจค",
+                "upcoming_deadlines": "กำหนดส่งเร็วๆ นี้",
+                "gantt_chart": "แผนภูมิแกนต์ (Gantt Chart)",
+                "no_upcoming_deadlines": "ไม่มีงานที่ใกล้กำหนดส่ง",
+
+                // Tasks
+                "tasks_title": "รายการงาน (Tasks)",
+                "new_task": "+ สร้างงานใหม่",
+                "search_tasks_placeholder": "ค้นหางาน...",
+                "all_status": "สถานะทั้งหมด",
+                "project": "โปรเจค",
+                "title": "หัวข้อ",
+                "status_planning": "วางแผน",
+                "status_correct": "ตรวจสอบแก้ไข",
+                "status_test": "ทดสอบ",
+                "status_ready": "พร้อมขึ้นระบบ",
+                "status_deploy": "ขึ้นระบบ",
+                "status_done": "เสร็จสิ้น",
+                "priority_high": "สูง",
+                "priority_medium": "กลาง",
+                "priority_low": "ต่ำ",
+                "role_member": "สมาชิก",
+                "role_projectadmin": "ผู้ดูแลโปรเจค",
+                "role_viewer": "ผู้เข้าชม",
+                "role_master": "ผู้ดูแลระบบสูงสุด",
+                "unassigned": "ยังไม่ระบุ",
+                "parent_task": "งานหลัก",
+                "subtasks": "งานย่อย",
+                "close": "ปิด",
+                "total": "ทั้งหมด",
+                "page": "หน้า",
+                "previous": "ก่อนหน้า",
+                "next": "ถัดไป",
+
+                // SQL Scripts
+                "script_viewer": "ดู Script",
+                "new_script_edit": "สร้าง Script ใหม่ / แก้ไข",
+                "save_new_script_version": "บันทึก Script เวอร์ชั่นใหม่",
+                "script_name_placeholder": "ชื่อ Script (เช่น รายงานประจำเดือน)",
+                "sql_content_placeholder": "คำสั่ง SQL",
+                "save_script": "บันทึก Script",
+                "clear_form": "ล้างฟอร์ม",
+                "select_script_view": "เลือก Script จากด้านซ้ายเพื่อดูรายละเอียด",
+                "copy_clipboard": "คัดลอกลง Clipboard",
+                "sql_scripts_manager": "จัดการ SQL Scripts",
+                "saved_scripts": "Scripts ที่บันทึกไว้",
+                "go": "ค้นหา",
+                "no_saved_scripts": "ไม่พบ Script ที่บันทึกไว้",
+                
+                // DocTools
+                "knowledge_base_title": "คู่มือ/แนวทาง (DocTools)",
+                "search_kb_placeholder": "ค้นหา (หัวข้อ, แท็ก)...",
+                "all_categories": "ทุกหมวดหมู่",
+                "cat_hardware": "ฮาร์ดแวร์",
+                "cat_software": "ซอฟต์แวร์",
+                "cat_network": "เครือข่าย",
+                "cat_account": "บัญชีผู้ใช้",
+                "cat_mobile_pda": "Mobile PDA",
+                "cat_mobile_got": "Mobile GOT",
+                "cat_ordering": "Ordering",
+                "cat_inventory": "Inventory",
+                "cat_backend_sc": "Backend SC",
+                "cat_audit": "Audit",
+                "cat_other": "อื่นๆ",
+                "article_viewer": "อ่านบทความ",
+                "new_article": "เขียนบทความใหม่",
+                "create_new_article": "สร้างบทความใหม่",
+                "title_placeholder": "หัวข้อ (เช่น วิธีรีเซ็ต VPN)",
+                "content_placeholder": "เนื้อหา (รองรับข้อความพื้นฐาน)...",
+                "save_article": "บันทึกบทความ",
+                "select_article_view": "เลือกบทความจากด้านซ้ายเพื่ออ่าน",
+                "category": "หมวดหมู่",
+                "tags": "แท็ก",
+                "tags_placeholder": "แท็ก (เช่น vpn, password, wifi)",
+                "no_articles_found": "ไม่พบบทความ",
+
+                // Logs
+                "logs_title": "บันทึกการทำงานระบบ (System Logs)",
+                "operation_logs": "บันทึกการทำงาน (Operation)",
+                "task_logs": "บันทึกงาน (Task)",
+                "filter_type_placeholder": "กรองตามประเภท...",
+                "all_types": "ทุกประเภท",
+                "type": "ประเภท",
+                "time": "เวลา",
+                "action": "การกระทำ",
+                "target": "เป้าหมาย",
+                "task_id": "รหัสงาน",
+                "detail": "รายละเอียด",
+                "message": "ข้อความ",
+                "user": "ผู้ใช้",
+                "ip_address": "IP Address",
+                "no_logs_found": "ไม่พบข้อมูล Logs",
+                "log_analytics": "วิเคราะห์ Logs (Log Analytics)",
+                "operation_stats": "สถิติการใช้งานระบบ",
+                "task_stats": "สถิติการทำงาน (Tasks)",
+                "external_log_analyzer": "วิเคราะห์ไฟล์ Log ภายนอก",
+                "external_log_desc": "อัปโหลดไฟล์ Log (.log, .txt) เพื่อตรวจสอบข้อผิดพลาดและคำเตือน",
+                "analyze_btn": "วิเคราะห์ Log",
+
+                // Users
+                "user_management_title": "จัดการผู้ใช้งาน",
+                "new_user": "เพิ่มผู้ใช้งานใหม่",
+                "create_user": "สร้างผู้ใช้งาน",
+                "all_users": "รายชื่อผู้ใช้งานทั้งหมด",
+                "username": "ชื่อผู้ใช้ (Username)",
+                "role": "สิทธิ์ (Role)",
+                "email": "อีเมล",
+                "password": "รหัสผ่าน",
+                "last_login": "เข้าสู่ระบบล่าสุด",
+                "no_users_found": "ไม่พบข้อมูลผู้ใช้งาน",
+
+                // Login
+                "login_title": "SCFlow_ เข้าสู่ระบบ",
+                "login_button": "เข้าสู่ระบบ",
+                "error_invalid_credentials": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+            }
+        };
+
+        function setLanguage(lang) {
+            localStorage.setItem('lang', lang);
+            document.documentElement.lang = lang;
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
+        }
+
+        function toggleLanguage() {
+            const current = localStorage.getItem('lang') || 'en';
+            const next = current === 'en' ? 'th' : 'en';
+            setLanguage(next);
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const lang = localStorage.getItem('lang') || 'en';
+            setLanguage(lang);
+        });
+        
+        // Re-apply on HTMX swap
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            const lang = localStorage.getItem('lang') || 'en';
+            setLanguage(lang);
+        });
+    </script>
+</body>
+</html>

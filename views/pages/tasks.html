@@ -1,0 +1,147 @@
+<div class="flex-between mb-4">
+    <h2 data-i18n="tasks_title">Tasks (Kanban)</h2>
+    <div class="flex-gap">
+        <form action="/tasks" method="GET" style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" name="q" placeholder="Search..." data-i18n-placeholder="search_placeholder" style="width: 200px; margin-bottom: 0;" value="{{.Query}}">
+            <select name="filter_assignee" class="form-control" style="width: 200px; margin-bottom: 0;" onchange="this.form.submit()">
+                <option value="">All Assignees</option>
+                {{range .Users}}
+                <option value="{{.ID}}" {{if eq $.FilterAssignee .ID}}selected{{end}}>{{.Username}}</option>
+                {{end}}
+            </select>
+            <button class="btn" type="submit" data-i18n="go">Go</button>
+        </form>
+        <button class="btn btn-primary" hx-get="/tasks/new" hx-target="#modal-content" hx-trigger="click" data-i18n="new_task">+ New Task</button>
+    </div>
+</div>
+
+<div id="tasks-content">
+    <div class="card mb-4" style="padding: 15px;">
+        <div class="mb-2" style="font-weight: bold;">Task Tree</div>
+        <ul style="list-style: none; padding-left: 0; margin: 0;">
+            {{range .UserTree}}
+            <li style="margin-bottom: 8px;">
+                <details open>
+                    <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>{{.Name}}</span>
+                        <span class="badge" style="background-color: var(--bg-color);">{{.Count}}</span>
+                    </summary>
+                    <div style="margin-left: 18px; margin-top: 8px;">
+                        {{range .Stages}}
+                        <details open style="margin-bottom: 6px;">
+                            <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                <span>{{.Name}}</span>
+                                <span class="badge" style="background-color: var(--bg-color);">{{.Count}}</span>
+                            </summary>
+                            <div style="margin-left: 18px; margin-top: 8px;">
+                                {{range .Services}}
+                                <details style="margin-bottom: 6px;">
+                                    <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>{{.Name}}</span>
+                                        <span class="badge" style="background-color: var(--bg-color);">{{.Count}}</span>
+                                    </summary>
+                                    <div style="margin-left: 18px; margin-top: 8px;">
+                                        {{range .Statuses}}
+                                        <details style="margin-bottom: 6px;">
+                                            <summary style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                                <span>{{.Status}}</span>
+                                                <span class="badge" style="background-color: var(--bg-color);">{{.Count}}</span>
+                                            </summary>
+                                            <div style="margin-left: 18px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                                                {{range .Tasks}}
+                                                <div class="card" style="padding: 10px; border: 1px solid var(--border-color);">
+                                                    {{$task := .}}
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                                                        <div style="font-weight: 600;">{{if .TaskCode}}{{.TaskCode}}{{else}}#{{.ID}}{{end}} {{.Title}}</div>
+                                                        <div style="display: flex; gap: 6px;">
+                                                            <button class="btn" hx-get="/tasks/{{.ID}}" hx-target="#modal-content">View</button>
+                                                            {{if ne .Status "Done"}}
+                                                            <button class="btn btn-primary" hx-post="/tasks/{{.ID}}/status" hx-vals='{"status":"Done"}' hx-swap="none" hx-confirm="ยืนยันการปิดงานเป็น Done?" hx-on="htmx:afterOnLoad:if(event.detail.xhr.status>=200&&event.detail.xhr.status<300){this.style.display='none'}">Done</button>
+                                                            {{end}}
+                                                            <button class="btn btn-danger" hx-delete="/tasks/{{.ID}}" hx-target="closest .card" hx-swap="outerHTML">Delete</button>
+                                                        </div>
+                                                    </div>
+                                                    <form hx-post="/tasks/{{.ID}}/assign" hx-trigger="change" hx-swap="none" hx-confirm="ยืนยันการมอบหมายงาน? หลังยืนยันจะเปลี่ยนไม่ได้" hx-on="htmx:afterOnLoad:if(event.detail.xhr.status>=200&&event.detail.xhr.status<300){this.querySelector('select').setAttribute('disabled','disabled')}" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-size: 0.85em; color: var(--text-muted);" data-i18n="assignee">Assignee</span>
+                                                        <select name="assignee_id" style="width: 200px; margin-bottom: 0;" {{if $task.Assignee}}disabled{{end}}>
+                                                            <option value="" data-i18n="unassigned">Unassigned</option>
+                                                            {{range $.Users}}
+                                                            <option value="{{.ID}}" {{if and $task.Assignee (eq $task.Assignee.ID .ID)}}selected{{end}}>{{.Username}}</option>
+                                                            {{end}}
+                                                        </select>
+                                                    </form>
+                                                    <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 6px;">
+                                                        Service: {{if .Project.Name}}{{.Project.Name}}{{else}}Unassigned Service{{end}} |
+                                                        Assigned To: {{if .Assignee}}{{.Assignee.Username}}{{else}}Unassigned{{end}} |
+                                                        Assigned By: {{if .CreatedBy.Username}}{{.CreatedBy.Username}}{{else}}-{{end}} |
+                                                        Status: {{.Status}}
+                                                    </div>
+                                                    <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 4px;">
+                                                        Created: {{.CreatedAt.Format "2006-01-02 15:04"}} |
+                                                        Deadline: {{if .DueDate}}{{.DueDate.Format "2006-01-02 15:04"}}{{else}}-{{end}} |
+                                                        Completed: {{if eq .Status "Done"}}{{.UpdatedAt.Format "2006-01-02 15:04"}}{{else}}-{{end}}
+                                                    </div>
+                                                </div>
+                                                {{end}}
+                                            </div>
+                                        </details>
+                                        {{end}}
+                                    </div>
+                                </details>
+                                {{end}}
+                            </div>
+                        </details>
+                        {{end}}
+                    </div>
+                </details>
+            </li>
+            {{end}}
+        </ul>
+    </div>
+
+    <div class="kanban-container" id="kanban-board" style="overflow-x: auto; padding-bottom: 20px;">
+        {{template "partials/kanban_board" .}}
+    </div>
+</div>
+
+<!-- Simple Modal Placeholder -->
+<div id="modal-content"></div>
+
+<!-- SortableJS -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        initKanban();
+    });
+
+    // Re-init after HTMX swap
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'kanban-board') {
+            initKanban();
+        }
+    });
+
+    function initKanban() {
+        const columns = document.querySelectorAll('.kanban-tasks');
+        columns.forEach(col => {
+            new Sortable(col, {
+                group: 'kanban', // set both lists to same group
+                animation: 150,
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const newStatus = evt.to.getAttribute('data-status');
+                    const taskId = itemEl.getAttribute('data-id');
+                    
+                    // Only update if status changed
+                    if (evt.from !== evt.to) {
+                        // Send HTMX request to update status
+                        htmx.ajax('POST', '/tasks/' + taskId + '/status', {
+                            values: { status: newStatus },
+                            swap: 'none' // Don't replace content, we moved it manually
+                        });
+                    }
+                }
+            });
+        });
+    }
+</script>

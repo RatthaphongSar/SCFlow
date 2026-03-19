@@ -1,0 +1,26 @@
+# Database
+scflow.db
+
+# Environment
+.env
+
+# Uploads (keep directory)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Binary
+*.exe
+scflow
+
+# IDE / Editor / Agent
+.antigravity/
+.gemini/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp
+.tmp_cookie.txt

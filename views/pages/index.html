@@ -1,0 +1,70 @@
+<h2 class="mb-4" data-i18n="dashboard_title">> Dashboard</h2>
+
+<div class="grid-4 mb-4">
+    <div class="card">
+        <div class="stat-value">{{.TotalTasks}}</div>
+        <div class="stat-label" data-i18n="total_tasks">Total Tasks</div>
+    </div>
+    <div class="card">
+        <div class="stat-value" style="color: var(--warning-color);">{{.PendingTasks}}</div>
+        <div class="stat-label" data-i18n="pending_tasks">Pending / In Progress</div>
+    </div>
+    <div class="card">
+        <div class="stat-value" style="color: var(--success-color);">{{.CompletedTasks}}</div>
+        <div class="stat-label" data-i18n="completed_tasks">Completed</div>
+    </div>
+    <div class="card">
+        <div class="stat-value">{{.TotalProjects}}</div>
+        <div class="stat-label" data-i18n="total_projects">Projects</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="flex-between mb-4">
+        <h3 data-i18n="recent_tasks">Recent Tasks</h3>
+        <a href="/tasks" class="btn" data-i18n="view_all">View All</a>
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th data-i18n="id">ID</th>
+                    <th data-i18n="task">Task</th>
+                    <th data-i18n="status">Status</th>
+                    <th data-i18n="priority">Priority</th>
+                    <th data-i18n="assignee">Assignee</th>
+                    <th data-i18n="due_date">Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Tasks}}
+                <tr>
+                    <td>{{if .TaskCode}}{{.TaskCode}}{{else}}#{{.ID}}{{end}}</td>
+                    <td>{{.Title}}</td>
+                    <td><span class="badge {{.Status | toLower}}" data-i18n="status_{{.Status | toLower}}">{{.Status}}</span></td>
+                    <td style="color: {{if eq .Priority "High"}}var(--danger-color){{else}}var(--text-muted){{end}};" data-i18n="priority_{{.Priority | toLower}}">{{.Priority}}</td>
+                    <td>{{if .Assignee}}{{.Assignee.Username}}{{else}}-{{end}}</td>
+                    <td>{{if .DueDate}}{{.DueDate.Format "2006-01-02"}}{{else}}-{{end}}</td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted);" data-i18n="no_tasks_found">No tasks found.</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 data-i18n="system_logs_title">System Logs</h3>
+    <div style="font-family: var(--font-mono); font-size: 0.85em; margin-top: 10px; color: var(--text-muted);">
+        {{range .Logs}}
+        <div style="padding: 4px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--primary-color);">[{{.CreatedAt.Format "15:04:05"}}]</span>
+            <span style="color: #fff;">{{.User.Username}}</span>: {{.Action}} - {{.Target}}
+        </div>
+        {{end}}
+    </div>
+</div>

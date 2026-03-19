@@ -1,0 +1,132 @@
+<div class="alert-modal" id="task-detail-modal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border-radius: 12px;">
+    <div class="alert-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+            <span class="badge {{.Task.Status | toLower}}">{{.Task.Status}}</span>
+            <h3 style="margin: 0;">{{if .Task.TaskCode}}{{.Task.TaskCode}}{{else}}#{{.Task.ID}}{{end}} {{.Task.Title}}</h3>
+        </div>
+        <button class="alert-modal-close" onclick="(function(){const m=document.querySelector('#modal-content .alert-modal');const o=document.querySelector('#modal-content .alert-modal-overlay');if(m)m.classList.remove('show');if(o)o.classList.remove('show');setTimeout(()=>document.getElementById('modal-content').innerHTML='',300);})()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="alert-modal-body">
+        <div style="margin-bottom: 20px;">
+            <div style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 10px;">
+                {{if .Task.Project.Name}}<span data-i18n="project">Project</span>: <span style="color: var(--text-color);">{{.Task.Project.Name}}</span> | {{end}}
+                <span data-i18n="priority">Priority</span>: <span style="color: {{if eq .Task.Priority "High"}}var(--danger-color){{else}}var(--text-color){{end}};" data-i18n="priority_{{.Task.Priority | toLower}}">{{.Task.Priority}}</span>
+            </div>
+            
+            <div class="grid-4 mb-4" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.8em;" data-i18n="creator">Creator</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span>{{if .Task.CreatedBy.Username}}{{.Task.CreatedBy.Username}}{{else}}-{{end}}</span>
+                    </div>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.8em;" data-i18n="assignee">Assignee</span>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span>{{if .Task.Assignee}}{{.Task.Assignee.Username}}{{else}}<span data-i18n="unassigned">Unassigned</span>{{end}}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <span style="color: var(--text-muted); display: block; font-size: 0.8em; margin-bottom: 5px;" data-i18n="description">Description</span>
+                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 4px; white-space: pre-wrap; line-height: 1.5;">{{if .Task.Description}}{{.Task.Description}}{{else}}-{{end}}</div>
+            </div>
+
+            {{if .Task.Parent}}
+            <div class="mb-4">
+                <span style="color: var(--text-muted); display: block; font-size: 0.8em; margin-bottom: 5px;" data-i18n="parent_task">Parent Task</span>
+                <div style="padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <a href="#" hx-get="/tasks/{{.Task.Parent.ID}}" hx-target="#modal-content">{{if .Task.Parent.TaskCode}}{{.Task.Parent.TaskCode}}{{else}}#{{.Task.Parent.ID}}{{end}} {{.Task.Parent.Title}}</a>
+                </div>
+            </div>
+            {{end}}
+
+            {{if .Task.Subtasks}}
+            <div class="mb-4">
+                <span style="color: var(--text-muted); display: block; font-size: 0.8em; margin-bottom: 5px;"><span data-i18n="subtasks">Subtasks</span> ({{len .Task.Subtasks}})</span>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    {{range .Task.Subtasks}}
+                    <div style="padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <a href="#" hx-get="/tasks/{{.ID}}" hx-target="#modal-content">{{if .TaskCode}}{{.TaskCode}}{{else}}#{{.ID}}{{end}} {{.Title}}</a>
+                        <span class="badge {{.Status | toLower}}" style="font-size: 0.7em;">{{.Status}}</span>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+
+            <div class="mb-4">
+                <span style="color: var(--text-muted); display: block; font-size: 0.8em; margin-bottom: 5px;" data-i18n="task_progress">Task Progress</span>
+                <div id="task-logs" style="display: flex; flex-direction: column; gap: 8px;">
+                    {{if .TaskLogs}}
+                    {{range .TaskLogs}}
+                    <div style="padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>{{if .Action}}{{.Action}}{{else}}Progress{{end}} • {{if .User.Username}}{{.User.Username}}{{else}}-{{end}}</span>
+                            <span style="color: var(--text-muted); font-size: 0.8em;">{{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+                        </div>
+                        {{if .Detail}}
+                        <div style="margin-top: 6px; white-space: pre-wrap;">{{.Detail}}</div>
+                        {{end}}
+                        {{if .Link}}
+                        <div style="margin-top: 6px;">
+                            <a href="{{.Link}}" target="_blank" rel="noopener">{{.Link}}</a>
+                        </div>
+                        {{end}}
+                        {{if .AttachmentPath}}
+                        <div style="margin-top: 6px;">
+                            {{if .IsImage}}
+                            <div style="margin-bottom: 6px;">
+                                <img src="{{.AttachmentPath}}" alt="{{if .AttachmentName}}{{.AttachmentName}}{{else}}Attachment{{end}}" style="max-width: 100%; border-radius: 4px;">
+                            </div>
+                            {{end}}
+                            <a href="{{.AttachmentPath}}" target="_blank" rel="noopener">{{if .AttachmentName}}{{.AttachmentName}}{{else}}Attachment{{end}}</a>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{end}}
+                    {{else}}
+                    <div style="color: var(--text-muted); font-size: 0.85em;" data-i18n="no_task_logs">No logs</div>
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <span style="color: var(--text-muted); display: block; font-size: 0.8em; margin-bottom: 5px;" data-i18n="add_progress">Add Progress</span>
+                <form hx-post="/tasks/{{.Task.ID}}/logs" hx-target="#modal-content" hx-encoding="multipart/form-data" method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label data-i18n="log_type">Log Type</label>
+                        <input type="text" name="action" placeholder="Progress">
+                    </div>
+                    <div class="mb-4">
+                        <label data-i18n="message">Message</label>
+                        <textarea name="message" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label data-i18n="link">Link</label>
+                        <input type="text" name="link">
+                    </div>
+                    <div class="mb-4">
+                        <label data-i18n="attachment">Attachment</label>
+                        <input type="file" name="attachment">
+                    </div>
+                    <div class="alert-modal-footer" style="padding: 0; border: none; justify-content: flex-start;">
+                        <button type="submit" class="btn btn-primary" data-i18n="add_progress">Add Progress</button>
+                    </div>
+                </form>
+            </div>
+
+            <div style="font-size: 0.8em; color: var(--text-muted); margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <span data-i18n="created_at">Created</span>: {{.Task.CreatedAt.Format "Jan 02, 2006 15:04"}}
+                {{if .Task.DueDate}} | <span data-i18n="due_date">Due</span>: <span style="color: var(--warning-color);">{{.Task.DueDate.Format "Jan 02, 2006"}}</span>{{end}}
+            </div>
+        </div>
+    </div>
+    
+    <div class="alert-modal-footer">
+        <button class="btn btn-secondary" onclick="(function(){var m=document.querySelector('#modal-content .alert-modal');var o=document.querySelector('#modal-content .alert-modal-overlay');if(m)m.classList.remove('show');if(o)o.classList.remove('show');setTimeout(function(){document.getElementById('modal-content').innerHTML='';},300);})()" data-i18n="close">Close</button>
+    </div>
+</div>
+<div class="alert-modal-overlay" onclick="(function(){const m=document.querySelector('#modal-content .alert-modal');const o=this;if(m)m.classList.remove('show');o.classList.remove('show');setTimeout(()=>document.getElementById('modal-content').innerHTML='',300);})()"></div>

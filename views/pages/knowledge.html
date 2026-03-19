@@ -1,0 +1,90 @@
+{{define "pages/knowledge"}}
+<div class="grid-container">
+    <!-- Left Column: Knowledge List & Search -->
+    <div class="card" style="grid-column: span 1; display: flex; flex-direction: column;">
+        <h3 data-i18n="knowledge_base_title">Knowledge Base</h3>
+        
+        <form action="/knowledge" method="GET" class="mb-4">
+            <input type="text" name="search" placeholder="Search (Title, Tags)..." data-i18n-placeholder="search_kb_placeholder" value="{{.Search}}" style="width: 100%; margin-bottom: 10px;">
+            <select name="category" style="width: 100%;" onchange="this.form.submit()">
+                <option value="" data-i18n="all_categories">All Categories</option>
+                <option value="Hardware" {{if eq .Category "Hardware"}}selected{{end}} data-i18n="cat_hardware">Hardware</option>
+                <option value="Software" {{if eq .Category "Software"}}selected{{end}} data-i18n="cat_software">Software</option>
+                <option value="Network" {{if eq .Category "Network"}}selected{{end}} data-i18n="cat_network">Network</option>
+                <option value="Account" {{if eq .Category "Account"}}selected{{end}} data-i18n="cat_account">Account</option>
+                <option value="Mobile PDA" {{if eq .Category "Mobile PDA"}}selected{{end}} data-i18n="cat_mobile_pda">Mobile PDA</option>
+                <option value="Mobile GOT" {{if eq .Category "Mobile GOT"}}selected{{end}} data-i18n="cat_mobile_got">Mobile GOT</option>
+                <option value="Ordering" {{if eq .Category "Ordering"}}selected{{end}} data-i18n="cat_ordering">Ordering</option>
+                <option value="Inventory" {{if eq .Category "Inventory"}}selected{{end}} data-i18n="cat_inventory">Inventory</option>
+                <option value="Backend_SC" {{if eq .Category "Backend_SC"}}selected{{end}} data-i18n="cat_backend_sc">Backend SC</option>
+                <option value="Audit" {{if eq .Category "Audit"}}selected{{end}} data-i18n="cat_audit">Audit</option>
+                <option value="Other" {{if eq .Category "Other"}}selected{{end}} data-i18n="cat_other">Other</option>
+            </select>
+        </form>
+
+        <div class="nav-menu" style="flex-grow: 1; overflow-y: auto;">
+            {{range .Knowledges}}
+            <div class="nav-item" id="knowledge-{{.ID}}" style="display: flex; flex-direction: column; gap: 5px; border-bottom: 1px solid var(--border-color); padding: 8px 0;">
+                <div style="cursor: pointer;" 
+                     hx-get="/knowledge/{{.ID}}/content" 
+                     hx-target="#knowledge-display-area"
+                     hx-swap="innerHTML">
+                    <div style="font-weight: bold; color: var(--primary-color);">{{.Title}}</div>
+                    <div style="font-size: 0.8em; color: var(--text-muted);"><span data-i18n="cat_{{.Category | categoryKey}}">{{.Category}}</span> | {{.CreatedAt.Format "Jan 02"}}</div>
+                </div>
+            </div>
+            {{else}}
+            <div style="text-align: center; color: var(--text-muted); padding: 20px;" data-i18n="no_articles_found">No articles found</div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Right Column: Viewer & Editor -->
+    <div class="card" style="grid-column: span 3;">
+        <div class="flex-between mb-4">
+            <h3 data-i18n="article_viewer">Article Viewer</h3>
+            <button class="btn" onclick="toggleForm()" data-i18n="new_article">New Article</button>
+        </div>
+
+        <form id="knowledge-form" action="/knowledge" method="POST" style="display: none; margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: rgba(0,0,0,0.1);">
+            <h4 id="form-title" data-i18n="create_new_article">Create New Article</h4>
+            <div class="mb-2">
+                <input type="text" name="title" placeholder="Title (e.g., How to reset VPN)" data-i18n-placeholder="title_placeholder" required style="width: 100%;">
+            </div>
+            <div class="mb-2 flex-between">
+                <select name="category" required style="width: 48%;">
+                    <option value="Hardware" data-i18n="cat_hardware">Hardware</option>
+                    <option value="Software" data-i18n="cat_software">Software</option>
+                    <option value="Network" data-i18n="cat_network">Network</option>
+                    <option value="Account" data-i18n="cat_account">Account</option>
+                    <option value="Mobile PDA" data-i18n="cat_mobile_pda">Mobile PDA</option>
+                    <option value="Mobile GOT" data-i18n="cat_mobile_got">Mobile GOT</option>
+                    <option value="Ordering" data-i18n="cat_ordering">Ordering</option>
+                    <option value="Inventory" data-i18n="cat_inventory">Inventory</option>
+                    <option value="Backend_SC" data-i18n="cat_backend_sc">Backend SC</option>
+                    <option value="Audit" data-i18n="cat_audit">Audit</option>
+                    <option value="Other" data-i18n="cat_other">Other</option>
+                </select>
+                <input type="text" name="tags" placeholder="Tags (e.g., vpn, password, wifi)" data-i18n-placeholder="tags_placeholder" style="width: 48%;">
+            </div>
+            <textarea name="content" rows="10" placeholder="Content (Support basic text layout)..." data-i18n-placeholder="content_placeholder" required style="font-family: sans-serif;"></textarea>
+            <div class="mt-2 flex-between">
+                <button type="submit" class="btn btn-primary" data-i18n="save_article">Save Article</button>
+                <button type="button" class="btn" style="background-color: var(--text-muted);" onclick="toggleForm()" data-i18n="cancel">Cancel</button>
+            </div>
+        </form>
+
+        <!-- Display Area -->
+        <div id="knowledge-display-area" style="min-height: 200px; padding: 20px; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+            <div data-i18n="select_article_view">Select an article from the left to view</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleForm() {
+    const form = document.getElementById('knowledge-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{{end}}

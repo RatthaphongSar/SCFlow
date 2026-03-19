@@ -1,0 +1,109 @@
+<div class="card">
+    <div class="flex-between mb-4">
+        <h2>Project Timeline & Calendar</h2>
+        <div class="flex-gap">
+            <select id="calendarFilter" class="form-control" style="width: 200px;" onchange="refreshCalendar()">
+                <option value="all">All Tasks</option>
+                <option value="my">My Tasks</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <div class="flex-gap" style="font-size: 0.9em; color: var(--text-muted);">
+            <span style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#6c757d; display:inline-block; margin-right:5px; border-radius:2px;"></span>Planning</span>
+            <span style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#007bff; display:inline-block; margin-right:5px; border-radius:2px;"></span>Correct</span>
+            <span style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#ffc107; display:inline-block; margin-right:5px; border-radius:2px;"></span>Test</span>
+            <span style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#17a2b8; display:inline-block; margin-right:5px; border-radius:2px;"></span>Ready</span>
+            <span style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#6610f2; display:inline-block; margin-right:5px; border-radius:2px;"></span>Deploy</span>
+            <span style="display:flex; align-items:center;"><span style="width:10px; height:10px; background:#28a745; display:inline-block; margin-right:5px; border-radius:2px;"></span>Done</span>
+        </div>
+    </div>
+
+    <div id="calendar" style="height: 700px;"></div>
+</div>
+
+<!-- FullCalendar -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        initCalendar();
+    });
+
+    var calendar;
+
+    function initCalendar() {
+        var calendarEl = document.getElementById('calendar');
+        var filter = document.getElementById('calendarFilter').value;
+
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listMonth'
+            },
+            themeSystem: 'standard',
+            height: '100%',
+            events: '/calendar/events?filter=' + filter,
+            eventClick: function(info) {
+                // Use HTMX to load task details into the modal
+                // Assuming #modal-content exists in layout
+                htmx.ajax('GET', '/tasks/' + info.event.id, {target: '#modal-content', swap: 'innerHTML'}).then(() => {
+                    document.getElementById('modal').style.display = 'block';
+                });
+            },
+            eventDidMount: function(info) {
+                // Tooltip or extra info
+                info.el.title = info.event.title + '\nStatus: ' + info.event.extendedProps.status + '\nAssignee: ' + info.event.extendedProps.assignee;
+            }
+        });
+
+        calendar.render();
+    }
+
+    function refreshCalendar() {
+        var filter = document.getElementById('calendarFilter').value;
+        // Update event source
+        var eventSource = calendar.getEventSources()[0];
+        eventSource.remove();
+        calendar.addEventSource('/calendar/events?filter=' + filter);
+    }
+</script>
+
+<style>
+    /* Dark mode adjustments for FullCalendar if needed */
+    :root {
+        --fc-border-color: var(--border-color);
+        --fc-button-bg-color: var(--primary-color);
+        --fc-button-border-color: var(--primary-color);
+        --fc-button-hover-bg-color: var(--secondary-color);
+        --fc-button-hover-border-color: var(--secondary-color);
+        --fc-button-active-bg-color: var(--secondary-color);
+        --fc-button-active-border-color: var(--secondary-color);
+        --fc-event-text-color: #fff;
+        --fc-page-bg-color: var(--bg-color);
+        --fc-neutral-bg-color: var(--bg-secondary);
+        --fc-list-event-hover-bg-color: var(--bg-secondary);
+    }
+    
+    .fc-theme-standard td, .fc-theme-standard th {
+        border-color: var(--border-color);
+    }
+    
+    .fc .fc-col-header-cell-cushion {
+        color: var(--text-color);
+    }
+    
+    .fc .fc-daygrid-day-number {
+        color: var(--text-color);
+    }
+    
+    .fc .fc-list-day-cushion {
+        background-color: var(--bg-secondary);
+    }
+
+    .fc .fc-list-event:hover td {
+        background-color: var(--bg-secondary);
+    }
+</style>

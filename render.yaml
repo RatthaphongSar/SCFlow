@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: scflow
+    runtime: docker
+    repo: https://github.com/RatthaphongSar/SCFlow
+    region: singapore
+    plan: free
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DB_DSN
+        value: /app/data/scflow.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_CHANNEL_TOKEN
+        sync: false
+      - key: LINE_GROUP_ID
+        sync: false
+    disk:
+      name: scflow-data
+      mountPath: /app/data
+      sizeGB: 1
